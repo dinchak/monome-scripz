@@ -1,0 +1,12 @@
+{
+  "m128-302": {
+    "scripts": [
+      {
+        "script": "triggers",
+        "config": {
+          "testconfig": "testconfigvalue"
+        }
+      }
+    ]
+  }
+}

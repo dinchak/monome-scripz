@@ -1,0 +1,15 @@
+{
+  "m40h0800": {
+    "rotation": 90,
+    "scripts": [
+      {
+        "script": "drumrack",
+        "config": {
+          "out": "drum rack out",
+          "in": "drum rack in",
+          "channel": 0
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "m40h0800": {
+    "scripts": [
+      {
+        "script": "cliplauncher",
+        "config": {
+          "testconfig": "testconfigvalue"
+        }
+      }
+    ]
+  }
+}
