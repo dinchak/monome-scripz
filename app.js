@@ -37,6 +37,7 @@ serialosc.on('device:add', function (device) {
     if (config[device.id].hasOwnProperty('rotation')) {
       device.setRotation(config[device.id].rotation);
     }
+    device.all(0);
 
     var pager = new Pager(device);
     devices.push(pager);

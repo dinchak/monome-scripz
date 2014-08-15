@@ -23,6 +23,7 @@
     "minimist": "^0.2.0",
     "serialosc": "git://github.com/dinchak/node-serialosc.git",
     "liveosc": "git://github.com/dinchak/node-liveosc.git",
+    "osc4bitwig": "git://github.com/dinchak/node-osc4bitwig.git",
     "underscore": "^1.6.0"
   }
 }
