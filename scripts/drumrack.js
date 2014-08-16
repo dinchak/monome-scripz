@@ -2,11 +2,12 @@ var _ = require('underscore');
 var midi = require('../lib/midi');
 var PatternRecorder = require('../lib/pattern-recorder');
 
-var Script = function (device, config) {
+var Script = function (device, config, ledState) {
   this.output = new midi.Output(config.out, true);
   this.input = new midi.Input(config.in, true);
   this.device = device;
   this.config = config;
+  this.ledState = ledState;
   this.patternRecorders = [];
   this.buffer = [];
   this.bufferPosition = -1;
@@ -15,6 +16,9 @@ var Script = function (device, config) {
   _.each(_.range(8), function (i) {
     self.patternRecorders[i] = new PatternRecorder();
     self.patternRecorders[i].on('recordedEvent', function (type, ev) {
+      if (ev.s == 1) {
+        self.flashLed(i, 0);
+      }
       self.device.emit(type, ev, {skipRecord: true});
     });
   });
@@ -124,7 +128,7 @@ Script.prototype.handlePress = function (press, opts) {
         }
       }
     }, this);
-    if (!patternRecording) {
+    if (!patternRecording && !opts.skipRecord) {
       this.addToBuffer(press);
     }
   }
@@ -145,15 +149,29 @@ Script.prototype.addToBuffer = function (press) {
   }
 };
 
-Script.prototype.noteToLed = function(note) {
-  console.log(note);
+Script.prototype.noteToLed = function (note) {
   var y = Math.floor((note.note - 36) / this.device.sizeX);
   y += this.device.sizeY - 4;
   var x = (note.note - 36) % this.device.sizeX;
   return {x:x, y:y};
 };
 
-Script.prototype.playNote = function(press) {
+Script.prototype.flashLed = function (x, y) {
+  var self = this;
+  if (this.ledState[y][x] == 1) {
+    this.device.set(x, y, 0);
+    setTimeout(function() {
+      self.device.set(x, y, 1);
+    }, 20);
+  } else {
+    this.device.set(x, y, 1);
+    setTimeout(function() {
+      self.device.set(x, y, 0);
+    }, 20);
+  }
+};
+
+Script.prototype.playNote = function (press) {
   var note = ((press.y - this.device.sizeY + 4) * this.device.sizeX) + press.x + 36;
   var type;
   var velocity;

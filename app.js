@@ -69,9 +69,10 @@ serialosc.on('device:add', function (device) {
           device.row.apply(device, args);
         }
       });
-      pager.ledState.push(pager.createLedState());
+      var ledState = pager.createLedState();
+      pager.ledState.push(ledState);
       var Script = require('./scripts/' + script.script);
-      var scrip = new Script(scriptDevice, script.config);
+      var scrip = new Script(scriptDevice, script.config, ledState);
       pager.scripts.push(scrip);
     });
   }
