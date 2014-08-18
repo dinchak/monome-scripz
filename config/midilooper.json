@@ -1,0 +1,15 @@
+{
+  "m40h0146": {
+    "rotation": 90,
+    "scripts": [
+      {
+        "script": "midilooper",
+        "config": {
+          "out": "midilooper out",
+          "in": "midilooper in",
+          "keyboard": "LPK25"
+        }
+      }
+    ]
+  }
+}
