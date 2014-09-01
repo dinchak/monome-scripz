@@ -37,39 +37,40 @@ serialosc.on('device:add', function (device) {
     if (config[device.id].hasOwnProperty('rotation')) {
       device.setRotation(config[device.id].rotation);
     }
-    device.all(0);
+    if (device.type == 'arc') {
+      for (var i = 0; i < device.encoders; i++) {
+        device.all(i, 0);
+      }
+    } else {
+      device.all(0);
+    }
 
     var pager = new Pager(device);
     devices.push(pager);
     _.each(config[device.id].scripts, function (script, scriptNum) {
-      var scriptDevice = _.extend(_.clone(device), {
-        set: function () {
-          var args = Array.prototype.slice.call(arguments, 0);
-          args.unshift(scriptNum);
-          device.set.apply(device, args);
-        },
-        all: function () {
-          var args = Array.prototype.slice.call(arguments, 0);
-          args.unshift(scriptNum);
-          device.all.apply(device, args);
-        },
-        map: function () {
-          var args = Array.prototype.slice.call(arguments, 0);
-          args.unshift(scriptNum);
-          device.map.apply(device, args);
-        },
-        row: function () {
-          var args = Array.prototype.slice.call(arguments, 0);
-          args.unshift(scriptNum);
-          device.row.apply(device, args);
-        },
-        col: function () {
-          var args = Array.prototype.slice.call(arguments, 0);
-          args.unshift(scriptNum);
-          device.row.apply(device, args);
+      var scriptDevice = _.clone(device);
+      _.each(device, function (value, param) {
+        if (param == 'on') {
+          return;
         }
+        if (typeof device[param] != 'function') {
+          return;
+        }
+        // add pager wrapper to each device function
+        scriptDevice[param] = function () {
+          var args = Array.prototype.slice.call(arguments, 0);
+          args.unshift(scriptNum);
+          device[param].apply(device, args);
+        };
       });
-      var ledState = pager.createLedState();
+
+      var ledState;
+      if (device.type == 'grid') {
+        ledState = pager.createGridLedState();
+      }
+      if (device.type == 'arc') {
+        ledState = pager.createArcLedState();
+      }
       pager.ledState.push(ledState);
       var Script = require('./scripts/' + script.script);
       var scrip = new Script(scriptDevice, script.config, ledState);

@@ -21,9 +21,9 @@
     "midi": "^0.9.0",
     "midi-parser": "^0.1.0",
     "minimist": "^0.2.0",
+    "underscore": "^1.6.0",
     "serialosc": "git://github.com/dinchak/node-serialosc.git",
     "liveosc": "git://github.com/dinchak/node-liveosc.git",
-    "osc4bitwig": "git://github.com/dinchak/node-osc4bitwig.git",
-    "underscore": "^1.6.0"
+    "osc4bitwig": "git://github.com/dinchak/node-osc4bitwig.git"
   }
 }

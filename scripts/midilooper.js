@@ -1,6 +1,7 @@
 var _ = require('underscore');
 var midi = require('../lib/midi');
 var PatternRecorder = require('../lib/pattern-recorder');
+var events = require('../lib/events');
 
 var Script = function (device, config, ledState) {
   this.device = device;
@@ -15,6 +16,8 @@ var Script = function (device, config, ledState) {
   this.shortBuffer = [];
   this.longBuffer = [];
   this.tick = -1;
+  this.shortLength = 384;
+  this.longLength = 768;
   this.shortBufferPosition = -1;
   this.longBufferPosition = -1;
   this.instrument = 0;
@@ -30,9 +33,9 @@ var Script = function (device, config, ledState) {
     _.each(_.range(4), function (j) {
       self.patternRecorders[i][j] = new PatternRecorder();
       if (j < 2) {
-        self.patternRecorders[i][j].length = 192;
+        self.patternRecorders[i][j].length = self.shortLength;
       } else {
-        self.patternRecorders[i][j].length = 384;
+        self.patternRecorders[i][j].length = self.longLength;
       }
       self.patternRecorders[i][j].playing = 0;
       self.patternRecorders[i][j].on('recordedEvent', function (type, ev) {
@@ -229,10 +232,10 @@ Script.prototype.onClock = function () {
   if (this.tick == 96) {
     this.tick = 0;
   }
-  if (this.shortBufferPosition == 192) {
+  if (this.shortBufferPosition == this.shortLength) {
     this.shortBufferPosition = 0;
   }
-  if (this.longBufferPosition == 384) {
+  if (this.longBufferPosition == this.longLength) {
     this.longBufferPosition = 0;
   }
   this.shortBuffer[this.shortBufferPosition] = [];

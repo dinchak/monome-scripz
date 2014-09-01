@@ -13,6 +13,8 @@ var Script = function (device, config, ledState) {
   this.longBuffer = [];
   this.shortBufferPosition = -1;
   this.longBufferPosition = -1;
+  this.shortLength = 192;
+  this.longLength = 384;
   var self = this;
 
   _.each(_.range(8), function (i) {
@@ -24,14 +26,15 @@ var Script = function (device, config, ledState) {
       self.device.emit(type, ev, {skipRecord: true});
     });
   });
-  self.patternRecorders[0].length = 192;
-  self.patternRecorders[1].length = 192;
-  self.patternRecorders[2].length = 384;
-  self.patternRecorders[3].length = 384;
-  self.patternRecorders[4].length = 96;
-  self.patternRecorders[5].length = 96;
-  self.patternRecorders[6].length = 192;
-  self.patternRecorders[7].length = 192;
+
+  self.patternRecorders[0].length = self.shortLength;
+  self.patternRecorders[1].length = self.shortLength;
+  self.patternRecorders[2].length = self.longLength;
+  self.patternRecorders[3].length = self.longLength;
+  self.patternRecorders[4].length = self.shortLength;
+  self.patternRecorders[5].length = self.shortLength;
+  self.patternRecorders[6].length = self.longLength;
+  self.patternRecorders[7].length = self.longLength;
 
   this.device.on('key', function (press, opts) {
     self.handlePress(press, opts);
@@ -50,10 +53,10 @@ var Script = function (device, config, ledState) {
   this.input.on('clock', function () {
     self.shortBufferPosition++;
     self.longBufferPosition++;
-    if (self.shortBufferPosition == 96) {
+    if (self.shortBufferPosition == self.shortLength) {
       self.shortBufferPosition = 0;
     }
-    if (self.longBufferPosition == 192) {
+    if (self.longBufferPosition == self.longLength) {
       self.longBufferPosition = 0;
     }
     self.shortBuffer[self.shortBufferPosition] = [];
@@ -92,7 +95,7 @@ Script.prototype.handlePress = function (press, opts) {
         }
         this.device.set(press.x, press.y, this.patternRecorders[press.x].recording);
       } else {
-        if (this.patternRecorders.hasNotes) {
+        if (this.patternRecorders[press.x].hasNotes) {
           return;
         }
         this.device.set(press.x, 1, 1);

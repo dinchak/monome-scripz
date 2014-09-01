@@ -1,0 +1,40 @@
+{
+  "m40h0800": {
+    "rotation": 90,
+    "scripts": [
+      {
+        "script": "drumrack",
+        "config": {
+          "out": "drumrack out",
+          "in": "drumrack in",
+          "channel": 0
+        }
+      }
+    ]
+  },
+  "m40h0146": {
+    "rotation": 90,
+    "scripts": [
+      {
+        "script": "midilooper",
+        "config": {
+          "out": "midilooper out",
+          "in": "midilooper in",
+          "keyboard": "LPK25"
+        }
+      }
+    ]
+  },
+  "m0000226": {
+    "rotation": 0,
+    "scripts": [
+      {
+        "script": "arccontrol",
+        "config": {
+          "out": "arccontrol out",
+          "in": "arccontrol in"
+        }
+      }
+    ]
+  }
+}
