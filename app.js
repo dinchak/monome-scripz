@@ -57,6 +57,7 @@ serialosc.on('device:add', function (device) {
           return;
         }
         // add pager wrapper to each device function
+        scriptDevice.emit = device.emit;
         scriptDevice[param] = function () {
           var args = Array.prototype.slice.call(arguments, 0);
           args.unshift(scriptNum);

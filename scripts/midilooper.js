@@ -115,6 +115,7 @@ Script.prototype.setInstrument = function (newInstrument) {
   }
   this.instrument = newInstrument;
   this.device.set(this.instrument, 0, 1);
+  events.emit('midilooper:setInstrument', newInstrument);
 };
 
 Script.prototype.onKey = function (press) {
@@ -140,8 +141,10 @@ Script.prototype.onKey = function (press) {
     var mute = this.patternMutes[press.x];
     if (mute == 1) {
       this.device.set(press.x, 2, 0);
+      this.patternMutes[press.x] = 0;
     } else {
       this.device.set(press.x, 2, 1);
+      this.patternMutes[press.x] = 1;
     }
     for (var p = 0; p < 4; p++) {
       var patrec = this.patternRecorders[press.x][p];
