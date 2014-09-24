@@ -19,6 +19,7 @@ var Script = function (device, config, ledState) {
 
   _.each(_.range(8), function (i) {
     self.patternRecorders[i] = new PatternRecorder();
+    self.device.set(i, 2, 1);
     self.patternRecorders[i].on('recordedEvent', function (type, ev) {
       if (ev.s == 1) {
         self.flashLed(i, 0, self.patternRecorders[i].recording);
@@ -118,7 +119,6 @@ Script.prototype.handlePress = function (press, opts) {
       this.patternRecorders[press.x].recording = 0;
       this.device.set(press.x, 0, 0);
       this.device.set(press.x, 1, 0);
-      this.device.set(press.x, 2, 0);
     }
   }
   if (press.y == 2) {
