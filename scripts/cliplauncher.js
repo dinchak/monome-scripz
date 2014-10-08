@@ -21,6 +21,7 @@ var Script = function (device, config) {
 
   liveosc.song().on('ready', refreshClipState);
   liveosc.song().on('clip:state', function (data) {
+    console.log('clip state');
     device.set(data.trackId, data.id, data.value ? 1 : 0);
   });
 

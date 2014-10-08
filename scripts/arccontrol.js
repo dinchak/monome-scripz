@@ -4,6 +4,7 @@ var events = require('../lib/events');
 
 var Script = function (device, config, ledState) {
   this.device = device;
+  console.log(device.model);
   this.config = config;
   this.ledState = ledState;
   this.instrument = 0;
@@ -11,6 +12,7 @@ var Script = function (device, config, ledState) {
   this.input = new midi.Input(config.in, true);
   this.buffers = [];
   this.bufferRecording = [];
+  this.bufferRecordStart = [];
   this.bufferPosition = -1;
   this.bufferLength = 192;
   this.position = [];
@@ -19,17 +21,24 @@ var Script = function (device, config, ledState) {
     this.position[i] = [];
     this.buffers[i] = [];
     this.bufferRecording[i] = [];
+    this.bufferRecordStart[i] = [];
     for (var n = 0; n < device.encoders; n++) {
       this.position[i][n] = 0;
       this.buffers[i][n] = [];
       this.bufferRecording[i][n] = false;
+      this.bufferRecordStart[i][n] = 0;
       for (var p = 0; p < this.bufferLength; p++) {
-        this.buffers[i][n][p] = 0;
+        this.buffers[i][n][p] = -1;
       }
     }
   }
 
   device.on('delta', _.bind(function (e) {
+    if (!this.bufferRecording[this.instrument][e.n]) {
+      for (var p = 0; p < this.bufferLength; p++) {
+        this.buffers[this.instrument][e.n][p] = -1;
+      }
+    }
     this.position[this.instrument][e.n] += e.d;
     if (this.position[this.instrument][e.n] < 0) {
       this.position[this.instrument][e.n] = 0;
@@ -55,9 +64,12 @@ var Script = function (device, config, ledState) {
       for (var n = 0; n < device.encoders; n++) {
         if (this.bufferRecording[i][n]) {
           this.buffers[i][n][this.bufferPosition] = this.position[i][n];
+          if (this.bufferRecordStart[i][n] == this.bufferPosition) {
+            this.bufferRecording[i][n] = false;
+          }
         } else {
           var posNow = this.buffers[i][n][this.bufferPosition];
-          if (i == this.instrument && posNow) {
+          if (i == this.instrument && posNow > -1) {
             var levels = [];
             if (lastPosition != posNow) {
               for (var l = 0; l < 64; l++) {
@@ -66,7 +78,7 @@ var Script = function (device, config, ledState) {
               this.device.map(n, levels);
             }
           }
-          if (posNow && lastPosition != posNow) {
+          if (posNow > -1 && lastPosition != posNow) {
             this.ccOut(i, n, posNow);
           }
         }
@@ -76,20 +88,19 @@ var Script = function (device, config, ledState) {
 
   device.on('key', _.bind(function (e) {
     if (e.s == 1) {
-      if (this.bufferRecording[this.instrument][e.n]) {
-        this.bufferRecording[this.instrument][e.n] = false;
-      } else {
-        for (var p = 0; p < this.bufferLength; p++) {
-          this.buffers[this.instrument][e.n][p] = 0;
-        }
-        this.bufferRecording[this.instrument][e.n] = true;
+      for (var p = 0; p < this.bufferLength; p++) {
+        this.buffers[this.instrument][e.n][p] = -1;
       }
+      this.bufferRecordStart[this.instrument][e.n] = this.bufferPosition;
+      this.bufferRecording[this.instrument][e.n] = true;
     }
   }, this))
 
   this.input.on('cc', _.bind(this.ccIn, this));
 
   events.on('midilooper:setInstrument', _.bind(this.setInstrument, this));
+
+  events.on('midilooper:resetEffects', _.bind(this.resetEffects, this));
 };
 
 Script.prototype.ccOut = function (instrument, n, pos) {
@@ -129,6 +140,19 @@ Script.prototype.setInstrument = function (instrument) {
       levels.push(pos >= i ? 15 : 0);
     }
     this.device.map(n, levels);
+  }
+};
+
+Script.prototype.resetEffects = function (i) {
+  for (var n = 0; n < this.device.encoders; n++) {
+    this.position[i][n] = 0;
+    this.buffers[i][n] = [];
+    this.bufferRecording[i][n] = false;
+    this.bufferRecordStart[i][n] = 0;
+    for (var p = 0; p < this.bufferLength; p++) {
+      this.buffers[i][n][p] = -1;
+    }
+    this.ccOut(i, n, 0);
   }
 };
 

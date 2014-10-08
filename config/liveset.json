@@ -1,6 +1,6 @@
 {
   "m40h0800": {
-    "rotation": 90,
+    "rotation": 0,
     "scripts": [
       {
         "script": "drumrack",
@@ -13,14 +13,14 @@
     ]
   },
   "m40h0146": {
-    "rotation": 90,
+    "rotation": 180,
     "scripts": [
       {
         "script": "midilooper",
         "config": {
           "out": "midilooper out",
           "in": "midilooper in",
-          "keyboard": "LPK25"
+          "keyboard": "Q49"
         }
       }
     ]

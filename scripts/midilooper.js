@@ -2,6 +2,7 @@ var _ = require('underscore');
 var midi = require('../lib/midi');
 var PatternRecorder = require('../lib/pattern-recorder');
 var events = require('../lib/events');
+var liveosc = require('../lib/liveosc');
 
 var Script = function (device, config, ledState) {
   this.device = device;
@@ -22,14 +23,16 @@ var Script = function (device, config, ledState) {
   this.longBufferPosition = -1;
   this.instrument = 0;
   this.pattern = 0;
+  this.tempo = 120.0;
+  this.looperOverdub = false;
+  this.looperBeat = 0;
   device.set(this.instrument, 0, 1);
   var self = this;
   _.each(_.range(8), function (i) {
     self.patternRecorders[i] = [];
-    self.patternMutes[i] = 0;
+    self.patternMutes[i] = 1;
     self.device.set(i, 2, 1);
-    self.patternModes[i] = 1;
-    self.device.set(i, 3, 1);
+    self.patternModes[i] = 0;
     _.each(_.range(4), function (j) {
       self.patternRecorders[i][j] = new PatternRecorder();
       if (j < 2) {
@@ -49,14 +52,72 @@ var Script = function (device, config, ledState) {
     });
   });
 
+  liveosc.song().on('ready', _.bind(function () {
+    liveosc.song().on('beat', _.bind(function () {
+      if (this.looperOverdub && this.looperBeat + 16 == liveosc.song().beat) {
+        this.looperOverdub = false;
+        this.sendLooperNote(0);
+      }
+    }, this));
+
+    liveosc.device(0, 'master').on('param', _.bind(function (params) {
+      if (params.value === 0) {
+        this.device.set(3, 3, 0);
+        this.device.set(4, 3, 0);
+        this.device.set(5, 3, 0);
+      }
+      if (params.value === 1) {
+        this.device.set(3, 3, 1);
+        this.device.set(4, 3, 0);
+        this.device.set(5, 3, 0);
+      }
+      if (params.value === 2) {
+        this.device.set(3, 3, 0);
+        this.device.set(4, 3, 0);
+        this.device.set(5, 3, 1);
+      }
+      if (params.value === 3) {
+        this.device.set(3, 3, 1);
+        this.device.set(4, 3, 1);
+        this.device.set(5, 3, 0);
+      }
+      if (params.value != 2) {
+        return;
+      }
+      for (var x = 0; x < 8; x++) {
+        events.emit('midilooper:resetEffects', x);
+        _.each(self.patternRecorders[x], function (patrec, i) {
+          patrec.clear();
+          patrec.recording = 0;
+          patrec.playing = 0;
+          self.device.set(x, i + 4, 0);
+        });
+        self.device.set(x, 1, 0);
+        this.allNotesOff();
+      }
+    }, this));
+  }, this));
+
   this.device.on('key', _.bind(this.onKey, this));
   this.input.on('clock', _.bind(this.onClock, this));
   this.input.on('position', _.bind(this.onPosition, this));
+
+  liveosc.song().on('clip:state', _.bind(this.onClipState, this));
+  liveosc.song().on('tempo', _.bind(function (tempo) {
+    this.tempo = tempo.value;
+  }, this));
+
   this.keyboard.on('noteon', function (note) {
     self.onNote(note, 'noteon');
   });
+
   this.keyboard.on('noteoff', function (note) {
-    self.onNote(note, 'noteoff');
+    if (note.channel == 15) {
+      var press = self.noteToLed(data);
+      self.device.set(press.x, press.y, 1);
+    } else {
+      self.onNote(note, 'noteoff');
+    }
   });
 };
 
@@ -81,7 +142,7 @@ Script.prototype.onNote = function (note, type, opts) {
   if (!opts.skipRecord) {
     this.addToBuffers(event);
   }
-  this.setClearButton(this.instrument);
+  // this.setClearButton(this.instrument);
 };
 
 Script.prototype.addToBuffers = function (press) {
@@ -128,14 +189,15 @@ Script.prototype.onKey = function (press) {
     }
   }
   if (press.y == 1) {
-    var self = this;
-    _.each(this.patternRecorders[press.x], function (patrec, i) {
-      patrec.clear();
-      patrec.recording = 0;
-      patrec.playing = 0;
-      self.device.set(press.x, i + 4, 0);
-    });
-    self.device.set(press.x, 1, 0);
+    events.emit('midilooper:resetEffects', press.x);
+    // var self = this;
+    // _.each(this.patternRecorders[press.x], function (patrec, i) {
+    //   patrec.clear();
+    //   patrec.recording = 0;
+    //   patrec.playing = 0;
+    //   self.device.set(press.x, i + 4, 0);
+    // });
+    // self.device.set(press.x, 1, 0);
   }
   if (press.y == 2) {
     var mute = this.patternMutes[press.x];
@@ -157,12 +219,25 @@ Script.prototype.onKey = function (press) {
     }
   }
   if (press.y == 3) {
-    if (this.patternModes[press.x] == 1) {
-      this.patternModes[press.x] = 0;
-      this.device.set(press.x, 3, 0);
-    } else {
-      this.patternModes[press.x] = 1;
-      this.device.set(press.x, 3, 1);
+    if (press.x < 3) {
+      this.launchClip(press);
+    }
+    if (press.x == 3) {
+      this.sendLooperNote(0);
+    }
+    if (press.x == 4) {
+      this.looperOverdub = true;
+      this.looperBeat = liveosc.song().beat;
+      this.sendLooperNote(1);
+    }
+    if (press.x == 5) {
+      this.sendLooperNote(2);
+    }
+    if (press.x == 6) {
+      this.tempoDown();
+    }
+    if (press.x == 7) {
+      this.tempoUp();
     }
   }
   if (press.y > 3) {
@@ -172,7 +247,7 @@ Script.prototype.onKey = function (press) {
       clearPatrec.recording = 0;
       clearPatrec.playing = 0;
       this.device.set(press.x, press.y, 0);
-      this.setClearButton(press.x);
+      // this.setClearButton(press.x);
       return;
     }
     for (var i = 0; i < 4; i++) {
@@ -209,24 +284,24 @@ Script.prototype.onKey = function (press) {
       patrec.hasNotes = true;
       this.device.set(press.x, press.y, 1);
     }
-    this.setClearButton(press.x);
+    // this.setClearButton(press.x);
   }
 };
 
-Script.prototype.setClearButton = function (col) {
-  var isEmpty = true;
-  for (var p = 0; p < 4; p++) {
-    var patrec = this.patternRecorders[col][p];
-    if (patrec.hasNotes) {
-      isEmpty = false;
-    }
-  }
-  if (isEmpty) {
-    this.device.set(col, 1, 0);
-  } else {
-    this.device.set(col, 1, 1);
-  }
-};
+// Script.prototype.setClearButton = function (col) {
+//   var isEmpty = true;
+//   for (var p = 0; p < 4; p++) {
+//     var patrec = this.patternRecorders[col][p];
+//     if (patrec.hasNotes) {
+//       isEmpty = false;
+//     }
+//   }
+//   if (isEmpty) {
+//     this.device.set(col, 1, 0);
+//   } else {
+//     this.device.set(col, 1, 1);
+//   }
+// };
 
 Script.prototype.onClock = function () {
   this.shortBufferPosition++;
@@ -271,6 +346,65 @@ Script.prototype.onPosition = function (ev) {
     this.shortBufferPosition = -1;
     this.longBufferPosition = -1;
     this.tick = -1;
+  }
+};
+
+Script.prototype.launchClip = function (press) {
+  if (press.s != 1) {
+    return;
+  }
+  var trackId = 0;
+  var clipId = press.x;
+  var clip = liveosc.clip(clipId, trackId);
+  if (clip) {
+    clip.play();
+  }
+};
+
+Script.prototype.onClipState = function (data) {
+  if (data.trackId != 0 || data.id >= 6) {
+    return;
+  }
+  if (data.value == 2) {
+    this.device.set(data.id, 3, 1);
+  } else {
+    this.device.set(data.id, 3, 0);
+  }
+};
+
+Script.prototype.tempoDown = function () {
+  liveosc.song().setTempo(this.tempo - 5);
+};
+
+Script.prototype.tempoUp = function () {
+  liveosc.song().setTempo(this.tempo + 5);
+};
+
+Script.prototype.sendLooperNote = function (num) {
+  this.output.send({
+    type: 'noteon',
+    channel: 15,
+    note: num,
+    velocity: 127
+  });
+  this.output.send({
+    type: 'noteoff',
+    channel: 15,
+    note: num,
+    velocity: 127
+  });
+}
+
+Script.prototype.allNotesOff = function () {
+  for (var c = 0; c < 4; c++) {
+    for (var n = 0; n < 128; n++) {
+      this.output.send({
+        type: 'noteoff',
+        channel: c,
+        note: n,
+        velocity: 127
+      });
+    }
   }
 };
 
