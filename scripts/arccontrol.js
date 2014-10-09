@@ -1,6 +1,7 @@
 var _ = require('underscore');
 var midi = require('../lib/midi');
 var events = require('../lib/events');
+var liveosc = require('../lib/liveosc');
 
 var Script = function (device, config, ledState) {
   this.device = device;
@@ -33,6 +34,31 @@ var Script = function (device, config, ledState) {
     }
   }
 
+  for (var n = 0; n < this.device.encoders; n++) {
+    var levels = [15];
+    for (var i = 1; i < 64; i++) {
+      levels.push(0);
+    }
+    this.device.map(n, levels);
+  }
+
+  liveosc.song().on('ready', _.bind(function () {
+    liveosc.device(0, 'master').on('param', _.bind(function (params) {
+      if (params.value == 2) {
+        for (var inst = 0; inst < 8; inst++) {
+          this.resetEffects(inst);
+          for (var n = 0; n < this.device.encoders; n++) {
+            var levels = [15];
+            for (var i = 1; i < 64; i++) {
+              levels.push(0);
+            }
+            this.device.map(n, levels);
+          }
+        }
+      }
+    }, this));
+  }, this));
+
   device.on('delta', _.bind(function (e) {
     if (!this.bufferRecording[this.instrument][e.n]) {
       for (var p = 0; p < this.bufferLength; p++) {
@@ -46,8 +72,8 @@ var Script = function (device, config, ledState) {
     if (this.position[this.instrument][e.n] > 63) {
       this.position[this.instrument][e.n] = 63;
     }
-    var levels = [];
-    for (var i = 0; i < 64; i++) {
+    var levels = [15];
+    for (var i = 1; i < 64; i++) {
       levels.push(this.position[this.instrument][e.n] >= i ? 15 : 0);
     }
     device.map(e.n, levels);
@@ -70,9 +96,9 @@ var Script = function (device, config, ledState) {
         } else {
           var posNow = this.buffers[i][n][this.bufferPosition];
           if (i == this.instrument && posNow > -1) {
-            var levels = [];
+            var levels = [15];
             if (lastPosition != posNow) {
-              for (var l = 0; l < 64; l++) {
+              for (var l = 1; l < 64; l++) {
                 levels.push(posNow >= l ? 15 : 0);
               }
               this.device.map(n, levels);
@@ -122,8 +148,8 @@ Script.prototype.ccIn = function (msg) {
     return;
   }
   this.position[msg.channel][msg.controller] = pos;
-  var levels = [];
-  for (var i = 0; i < 64; i++) {
+  var levels = [15];
+  for (var i = 1; i < 64; i++) {
     levels.push(pos >= i ? 15 : 0);
   }
   if (this.instrument == msg.channel) {
@@ -134,9 +160,9 @@ Script.prototype.ccIn = function (msg) {
 Script.prototype.setInstrument = function (instrument) {
   this.instrument = instrument;
   for (var n = 0; n < this.device.encoders; n++) {
-    var levels = [];
+    var levels = [15];
     var pos = this.position[instrument][n];
-    for (var i = 0; i < 64; i++) {
+    for (var i = 1; i < 64; i++) {
       levels.push(pos >= i ? 15 : 0);
     }
     this.device.map(n, levels);

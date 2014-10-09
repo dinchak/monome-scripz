@@ -26,6 +26,7 @@ var Script = function (device, config, ledState) {
   this.tempo = 120.0;
   this.looperOverdub = false;
   this.looperBeat = 0;
+  this.songSelect = 0;
   device.set(this.instrument, 0, 1);
   var self = this;
   _.each(_.range(8), function (i) {
@@ -33,6 +34,7 @@ var Script = function (device, config, ledState) {
     self.patternMutes[i] = 1;
     self.device.set(i, 2, 1);
     self.patternModes[i] = 0;
+    self.device.set(self.songSelect, 7, 1);
     _.each(_.range(4), function (j) {
       self.patternRecorders[i][j] = new PatternRecorder();
       if (j < 2) {
@@ -240,7 +242,7 @@ Script.prototype.onKey = function (press) {
       this.tempoUp();
     }
   }
-  if (press.y > 3) {
+  if (press.y > 3 && press.y != 7) {
     var clearPatrec = this.patternRecorders[press.x][press.y - 4];
     if (clearPatrec.playing) {
       clearPatrec.clear();
@@ -285,6 +287,16 @@ Script.prototype.onKey = function (press) {
       this.device.set(press.x, press.y, 1);
     }
     // this.setClearButton(press.x);
+  }
+  if (press.y == 7) {
+    this.device.set(this.songSelect, 7, 0);
+    this.device.set(press.x, 7, 1);
+    this.songSelect = press.x;
+    this.output.send({
+      type: 'cc',
+      value: press.x,
+      channel: 14
+    });
   }
 };
 

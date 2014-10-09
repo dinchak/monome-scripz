@@ -34,8 +34,10 @@ var Script = function (device, config, ledState) {
       for (var i = 0; i < 8; i++) {
         self.patternRecorders[i].clear();
         self.patternRecorders[i].recording = 0;
+        self.patternRecorders[i].muted = 0;
         self.device.set(i, 0, 0);
         self.device.set(i, 1, 0);
+        self.device.set(i, 2, 0);
       }
     });
   });
@@ -150,6 +152,8 @@ Script.prototype.handlePress = function (press, opts) {
       this.patternRecorders[press.x].recording = 0;
       this.device.set(press.x, 0, 0);
       this.device.set(press.x, 1, 0);
+      this.patternRecorders[press.x].muted = 0;
+      this.device.set(press.x, 2, 1);
     }
   }
   if (press.y == 2) {
