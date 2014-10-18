@@ -62,7 +62,7 @@ var Script = function (device, config, ledState) {
       }
     }, this));
 
-    liveosc.device(0, 'master').on('param', _.bind(function (params) {
+    liveosc.device(1, 'master').on('param', _.bind(function (params) {
       if (params.value === 0) {
         this.device.set(3, 3, 0);
         this.device.set(4, 3, 0);
@@ -192,6 +192,7 @@ Script.prototype.onKey = function (press) {
   }
   if (press.y == 1) {
     events.emit('midilooper:resetEffects', press.x);
+    this.notesOff(Math.floor(press.x / 2));
     // var self = this;
     // _.each(this.patternRecorders[press.x], function (patrec, i) {
     //   patrec.clear();
@@ -407,16 +408,20 @@ Script.prototype.sendLooperNote = function (num) {
   });
 }
 
+Script.prototype.notesOff = function (c) {
+  for (var n = 0; n < 128; n++) {
+    this.output.send({
+      type: 'noteoff',
+      channel: c,
+      note: n,
+      velocity: 127
+    });
+  }
+};
+
 Script.prototype.allNotesOff = function () {
   for (var c = 0; c < 4; c++) {
-    for (var n = 0; n < 128; n++) {
-      this.output.send({
-        type: 'noteoff',
-        channel: c,
-        note: n,
-        velocity: 127
-      });
-    }
+    this.notesOff(c);
   }
 };
 

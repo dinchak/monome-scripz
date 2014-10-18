@@ -27,7 +27,7 @@ var Script = function (device, config, ledState) {
   var self = this;
 
   liveosc.song().on('ready', function () {
-    liveosc.device(0, 'master').on('param', function (params) {
+    liveosc.device(1, 'master').on('param', function (params) {
       if (params.value != 2) {
         return;
       }
@@ -37,7 +37,7 @@ var Script = function (device, config, ledState) {
         self.patternRecorders[i].muted = 0;
         self.device.set(i, 0, 0);
         self.device.set(i, 1, 0);
-        self.device.set(i, 2, 0);
+        self.device.set(i, 2, 1);
       }
     });
   });

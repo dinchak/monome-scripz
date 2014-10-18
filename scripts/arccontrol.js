@@ -43,7 +43,7 @@ var Script = function (device, config, ledState) {
   }
 
   liveosc.song().on('ready', _.bind(function () {
-    liveosc.device(0, 'master').on('param', _.bind(function (params) {
+    liveosc.device(1, 'master').on('param', _.bind(function (params) {
       if (params.value == 2) {
         for (var inst = 0; inst < 8; inst++) {
           this.resetEffects(inst);
