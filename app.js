@@ -4,7 +4,7 @@ var chalk = require('chalk');
 var argv = require('minimist')(process.argv.slice(2));
 
 var Pager = require('./lib/pager');
-var SerialOSC = require('../node-serialosc/index');
+var SerialOSC = require('serialosc');
 var serialosc = new SerialOSC();
 
 var config = {};
