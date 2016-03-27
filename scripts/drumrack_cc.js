@@ -168,38 +168,18 @@ Script.prototype.handlePress = function (press, opts) {
       }
     }
   }
-  if (press.y == 3 && press.x <= 1) {
-    if (press.s == 1) {
-      if (press.x == 0) {
-        this.fingerOctave--;
-        if (this.fingerOctave < 0) {
-          this.fingerOctave = 0;
-        }
-      }
-      if (press.x == 1) {
-        this.fingerOctave++;
-        if (this.fingerOctave > 2) {
-          this.fingerOctave = 2;
-        }
-      }
-      this.drawFingerState();
-      this.drawFingerOctave();
+  if (press.y == 3) {
+    if (press.x <= 3 || (press.x > 3 && press.s == 1)) {
+      if (this.fingerState[press.x]) {
+        this.fingerState[press.x] = false;
+        this.ccOut(0, press.x + 1, 0);
+        this.device.set(press.x, press.y, 0);
+      } else {
+        this.fingerState[press.x] = true;
+        this.ccOut(0, press.x + 1, 127);
+        this.device.set(press.x, press.y, 1);
+      }      
     }
-  } else if (press.y == 3) {
-    var slot = (this.fingerOctave * 6) + press.x - 2;
-    if (press.s != 1) {
-      return;
-    }
-    if (this.fingerState[slot]) {
-      this.fingerState[slot] = false;
-      this.playNote({x: press.x, y: press.y, s: 0});
-      this.device.set(press.x, press.y, 0);
-    } else {
-      this.fingerState[slot] = true;
-      this.playNote({x: press.x, y: press.y, s: 1});
-      this.device.set(press.x, press.y, 1);
-    }
-
   } else if (press.y > 3) {
     this.playNote(press);
     if (press.y >= 4) {
@@ -312,6 +292,15 @@ Script.prototype.playNote = function (press) {
     channel: press.y == 3 ? 1 : 0,
     note: note,
     velocity: velocity
+  });
+};
+
+Script.prototype.ccOut = function (channel, controller, value) {
+  this.output.send({
+    type: 'cc',
+    channel: channel,
+    controller: controller,
+    value: value
   });
 };
 

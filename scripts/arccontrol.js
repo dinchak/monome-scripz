@@ -131,10 +131,11 @@ var Script = function (device, config, ledState) {
 
 Script.prototype.ccOut = function (instrument, n, pos) {
   var ccValue = pos * 2;
+  var ctrl = instrument * 4 + n;
   this.output.send({
     type: 'cc',
-    channel: instrument,
-    controller: n,
+    channel: 0,
+    controller: ctrl + 4,
     value: ccValue
   });
 };
@@ -144,15 +145,18 @@ Script.prototype.ccIn = function (msg) {
   if (!this.position[msg.channel]) {
     return;
   }
-  if (msg.controller > this.device.encoders) {
+  var ctrl = msg.controller - 4;
+  var instrument = Math.floor(ctrl / 8);
+  var encoder = ctrl % 4;
+  if (instrument >= 8) {
     return;
   }
-  this.position[msg.channel][msg.controller] = pos;
+  this.position[instrument][encoder] = pos;
   var levels = [15];
   for (var i = 1; i < 64; i++) {
     levels.push(pos >= i ? 15 : 0);
   }
-  if (this.instrument == msg.channel) {
+  if (this.instrument == instrument) {
     this.device.map(msg.controller, levels);
   }
 };

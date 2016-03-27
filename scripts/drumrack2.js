@@ -3,12 +3,11 @@ var midi = require('../lib/midi');
 var PatternRecorder = require('../lib/pattern-recorder');
 var liveosc = require('../lib/liveosc');
 
-var Script = function (device, config, ledState) {
-  this.device = device;
-  this.config = config;
-  this.ledState = ledState;
-  this.output = new midi.Output(config.out, true);
-  this.input = new midi.Input(config.in, true);
+var Script = module.exports = function () {};
+
+Script.prototype.init = function () {
+  this.output = new midi.Output(this.config.midiout, true);
+  this.input = new midi.Input(this.config.midiin, true);
   this.patternRecorders = [];
   this.tinyBuffer = [];
   this.shorterBuffer = [];
@@ -22,61 +21,49 @@ var Script = function (device, config, ledState) {
   this.shorterLength = 96;
   this.shortLength = 192;
   this.longLength = 384;
-  this.fingerOctave = 1;
-  this.fingerState = [];
+
   var self = this;
 
-  liveosc.song().on('ready', function () {
-    liveosc.device(1, 'master').on('param', function (params) {
-      if (params.value != 2) {
-        return;
-      }
-      for (var i = 0; i < 8; i++) {
-        self.patternRecorders[i].clear();
-        self.patternRecorders[i].recording = 0;
-        self.patternRecorders[i].muted = 0;
-        self.device.set(i, 0, 0);
-        self.device.set(i, 1, 0);
-        self.device.set(i, 2, 1);
-      }
-    });
-  });
-
-  _.each(_.range(8), function (i) {
+  _.each(_.range(15), function (i) {
     self.patternRecorders[i] = new PatternRecorder();
-    self.device.set(i, 2, 1);
+    self.set(i, 2, 1);
     self.patternRecorders[i].on('recordedEvent', function (type, ev) {
       if (ev.s == 1) {
         self.flashLed(i, 0, self.patternRecorders[i].recording);
       }
-      self.device.emit(type, ev, {skipRecord: true});
+      if (type == 'key') {
+        self.key(ev, {skipRecord: true});
+      }
     });
   });
 
-  self.patternRecorders[0].length = self.tinyLength;
-  self.patternRecorders[1].length = self.tinyLength;
-  self.patternRecorders[2].length = self.shorterLength;
-  self.patternRecorders[3].length = self.shorterLength;
-  self.patternRecorders[4].length = self.shortLength;
-  self.patternRecorders[5].length = self.shortLength;
-  self.patternRecorders[6].length = self.longLength;
-  self.patternRecorders[7].length = self.longLength;
-
-  this.device.on('key', function (press, opts) {
-    self.handlePress(press, opts);
-  });
+  this.patternRecorders[0].length = self.tinyLength;
+  this.patternRecorders[1].length = self.tinyLength;
+  this.patternRecorders[2].length = self.tinyLength;
+  this.patternRecorders[3].length = self.tinyLength;
+  this.patternRecorders[4].length = self.shorterLength;
+  this.patternRecorders[5].length = self.shorterLength;
+  this.patternRecorders[6].length = self.shorterLength;
+  this.patternRecorders[7].length = self.shorterLength;
+  this.patternRecorders[8].length = self.shortLength;
+  this.patternRecorders[9].length = self.shortLength;
+  this.patternRecorders[10].length = self.shortLength;
+  this.patternRecorders[11].length = self.shortLength;
+  this.patternRecorders[12].length = self.longLength;
+  this.patternRecorders[13].length = self.longLength;
+  this.patternRecorders[14].length = self.longLength;
 
   this.input.on('noteon', function (data) {
     var press = self.noteToLed(data);
     if (press) {
-      self.device.set(press.x, press.y, 1);
+      self.set(press.x, press.y, 1);
     }
   });
 
   this.input.on('noteoff', function (data) {
     var press = self.noteToLed(data);
     if (press) {
-      self.device.set(press.x, press.y, 0);
+      self.set(press.x, press.y, 0);
     }
   });
 
@@ -113,30 +100,41 @@ var Script = function (device, config, ledState) {
       });
     }
   });
+
+  this.set(this.device.sizeX - 1, 0, 1);
+  this.set(this.device.sizeX - 1, 1, 0);
+  this.set(this.device.sizeX - 1, 2, 0);
 };
 
-Script.prototype.handlePress = function (press, opts) {
+Script.prototype.key = function (press, opts) {
   opts = opts || {};
+
   var patternRecording = false;
   _.each(this.patternRecorders, function (patrec) {
     if (patrec.recording) {
       patternRecording = true;
     }
   });
+
+  if (press.x == this.device.sizeX - 1 && press.y < 3 && press.s == 1) {
+    this.pager.change(press.y);
+    return;
+  }
+
   if (press.y === 0) {
     if (press.s == 1) {
       if (this.patternRecorders[press.x].hasNotes) {
         return;
       }
-      this.device.set(press.x, 1, 1);
-      this.device.set(press.x, 2, 1);
-      if (press.x <= 1) {
+      this.set(press.x, 1, 1);
+      this.set(press.x, 2, 1);
+      if (press.x <= 3) {
         this.patternRecorders[press.x].queue = _.clone(this.tinyBuffer);
         this.patternRecorders[press.x].position = this.tinyBufferPosition;
-      } else if (press.x <= 3) {
+      } else if (press.x <= 7) {
         this.patternRecorders[press.x].queue = _.clone(this.shorterBuffer);
         this.patternRecorders[press.x].position = this.shorterBufferPosition;
-      } else if (press.x <= 5) {
+      } else if (press.x <= 11) {
         this.patternRecorders[press.x].queue = _.clone(this.shortBuffer);
         this.patternRecorders[press.x].position = this.shortBufferPosition;
       } else {
@@ -146,84 +144,58 @@ Script.prototype.handlePress = function (press, opts) {
       this.patternRecorders[press.x].hasNotes = true;
     }
   }
-  if (press.y == 1) {
+
+  else if (press.y == 1) {
     if (press.s == 1) {
       this.patternRecorders[press.x].clear();
       this.patternRecorders[press.x].recording = 0;
-      this.device.set(press.x, 0, 0);
-      this.device.set(press.x, 1, 0);
       this.patternRecorders[press.x].muted = 0;
-      this.device.set(press.x, 2, 1);
+      this.set(press.x, 0, 0);
+      this.set(press.x, 1, 0);
+      this.set(press.x, 2, 1);
     }
   }
-  if (press.y == 2) {
+
+  else if (press.y == 2) {
     if (press.s == 1) {
       if (this.patternRecorders[press.x].muted) {
         this.patternRecorders[press.x].muted = 0;
-        this.device.set(press.x, 2, 1);
+        this.set(press.x, 2, 1);
       } else {
         this.patternRecorders[press.x].muted = 1;
-        // this.patternRecorders[press.x].releasePressedKeys();
-        this.device.set(press.x, 2, 0);
+        this.set(press.x, 2, 0);
       }
     }
   }
-  if (press.y == 3 && press.x <= 1) {
-    if (press.s == 1) {
-      if (press.x == 0) {
-        this.fingerOctave--;
-        if (this.fingerOctave < 0) {
-          this.fingerOctave = 0;
-        }
-      }
-      if (press.x == 1) {
-        this.fingerOctave++;
-        if (this.fingerOctave > 2) {
-          this.fingerOctave = 2;
-        }
-      }
-      this.drawFingerState();
-      this.drawFingerOctave();
-    }
-  } else if (press.y == 3) {
-    var slot = (this.fingerOctave * 6) + press.x - 2;
-    if (press.s != 1) {
-      return;
-    }
-    if (this.fingerState[slot]) {
-      this.fingerState[slot] = false;
-      this.playNote({x: press.x, y: press.y, s: 0});
-      this.device.set(press.x, press.y, 0);
-    } else {
-      this.fingerState[slot] = true;
-      this.playNote({x: press.x, y: press.y, s: 1});
-      this.device.set(press.x, press.y, 1);
-    }
 
-  } else if (press.y > 3) {
+  else if (press.y >= 3) {
     this.playNote(press);
-    if (press.y >= 4) {
-      _.each(this.patternRecorders, function (patrec, i) {
-        if (patrec.recording) {
-          if (patrec.hasNotes) {
-            this.device.set(i, 1, 1);
-          }
-          if (!opts.skipRecord) {
-            patrec.recordEvent('key', press);
-          }
+    _.each(this.patternRecorders, function (patrec, i) {
+      if (patrec.recording) {
+        if (patrec.hasNotes) {
+          this.set(i, 1, 1);
         }
-      }, this);
-      if (!patternRecording && !opts.skipRecord) {
-        this.addToBuffers(press);
+        if (!opts.skipRecord) {
+          patrec.recordEvent('key', press);
+        }
       }
+    }, this);
+    if (!patternRecording && !opts.skipRecord) {
+      this.addToBuffers(press);
     }
   }
 };
 
 Script.prototype.addToBuffers = function (press) {
-  if (this.tinyBufferPosition == -1 || this.shorterBufferPosition == -1 || this.shortBufferPosition == -1 || this.longBufferPosition == -1) {
+  if (
+    this.tinyBufferPosition == -1 ||
+    this.shorterBufferPosition == -1 ||
+    this.shortBufferPosition == -1 ||
+    this.longBufferPosition == -1
+  ) {
     return;
   }
+
   if (!this.tinyBuffer[this.tinyBufferPosition]) {
     this.tinyBuffer[this.tinyBufferPosition] = [];
   }
@@ -236,6 +208,7 @@ Script.prototype.addToBuffers = function (press) {
   if (!this.longBuffer[this.longBufferPosition]) {
     this.longBuffer[this.longBufferPosition] = [];
   }
+
   if (!_.findWhere(this.tinyBuffer[this.tinyBufferPosition], {type: 'key', event: press})) {
     this.tinyBuffer[this.tinyBufferPosition].push({
       type: 'key',
@@ -263,41 +236,29 @@ Script.prototype.addToBuffers = function (press) {
 };
 
 Script.prototype.noteToLed = function (note) {
-  if (note.channel == 0) {
-    var y = Math.floor((note.note - 36) / this.device.sizeX);
-    y += this.device.sizeY - 4;
-    var x = (note.note - 36) % this.device.sizeX;
-    return {x:x, y:y};
-  }
-  // } else if (note.channel == 1) {
-  //   var y = 3;
-  //   var x = (note.note - 48 - (this.fingerOctave * 6));
-  //   return {x:x, y:y};
-  // }
+  var y = note.channel + 3;
+  var x = (note.note - 36);
+  return {x:x, y:y};
 };
 
 Script.prototype.flashLed = function (x, y, state) {
   var self = this;
   if (state == 1) {
-    this.device.set(x, y, 0);
+    this.set(x, y, 0);
     setTimeout(function() {
-      self.device.set(x, y, 1);
+      self.set(x, y, 1);
     }, 20);
   } else {
-    this.device.set(x, y, 1);
+    this.set(x, y, 1);
     setTimeout(function() {
-      self.device.set(x, y, 0);
+      self.set(x, y, 0);
     }, 20);
   }
 };
 
 Script.prototype.playNote = function (press) {
-  var note;
-  if (press.y > 3) {
-    note = ((press.y - this.device.sizeY + 4) * this.device.sizeX) + press.x + 36;
-  } else {
-    note = press.x + 48 + (this.fingerOctave * 6);
-  }
+  var note = press.x + 36;
+  var channel = press.y - 3;
   var type;
   var velocity;
   if (press.s == 1) {
@@ -309,37 +270,8 @@ Script.prototype.playNote = function (press) {
   }
   this.output.send({
     type: type,
-    channel: press.y == 3 ? 1 : 0,
+    channel: channel,
     note: note,
     velocity: velocity
   });
 };
-
-Script.prototype.drawFingerState = function () {
-  for (var i = 0; i < 6; i++) {
-    var idx = i + (this.fingerOctave * 6);
-    var slot = this.fingerState[idx];
-    if (slot) {
-      this.device.set(i + 2, 3, 1);
-    } else {
-      this.device.set(i + 2, 3, 0);
-    }
-  }
-};
-
-Script.prototype.drawFingerOctave = function () {
-  if (this.fingerOctave == 0) {
-    this.device.set(0, 3, 1);
-    this.device.set(1, 3, 0);
-  }
-  if (this.fingerOctave == 1) {
-    this.device.set(0, 3, 0);
-    this.device.set(1, 3, 0);
-  }
-  if (this.fingerOctave == 2) {
-    this.device.set(0, 3, 0);
-    this.device.set(1, 3, 1);
-  }
-};
-
-module.exports = Script;

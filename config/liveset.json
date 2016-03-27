@@ -1,9 +1,9 @@
 {
   "m40h0800": {
-    "rotation": 0,
+    "rotation": 180,
     "scripts": [
       {
-        "script": "drumrack",
+        "script": "drumrack_cc",
         "config": {
           "out": "drumrack out",
           "in": "drumrack in",
@@ -13,7 +13,7 @@
     ]
   },
   "m40h0146": {
-    "rotation": 180,
+    "rotation": 0,
     "scripts": [
       {
         "script": "midilooper",

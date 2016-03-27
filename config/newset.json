@@ -1,0 +1,27 @@
+{
+  "m1000079": {
+    "scripts": [
+      {
+        "script": "drumrack2",
+        "config": {
+          "midiout": "drumrack2 out",
+          "midiin": "drumrack2 in"
+        }
+      },
+      {
+        "script": "midilooper2",
+        "config": {
+          "midiout": "midilooper2 out",
+          "midiin": "midilooper2 in"
+        }
+      },
+      {
+        "script": "mixer",
+        "config": {
+          "midiout": "mixer out",
+          "midiin": "mixer in"
+        }
+      }
+    ]
+  }
+}
