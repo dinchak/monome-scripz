@@ -12,7 +12,8 @@
         "script": "midilooper2",
         "config": {
           "midiout": "midilooper2 out",
-          "midiin": "midilooper2 in"
+          "midiin": "midilooper2 in",
+          "keyboard": "LPK25"
         }
       },
       {
