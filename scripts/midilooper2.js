@@ -43,8 +43,17 @@ Script.prototype.init = function () {
     [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0], // F
   ];
   this.chordTable = [];
+  this.voiceTable = [];
   for (var i = 0; i < 140; i++) {
     this.chordTable[i] = 2 + Math.floor(Math.random() * 3);
+    this.voiceTable[i] = [
+      // 0,0,0,0,0
+      Math.floor(Math.random() * 5) == 0 ? 12 * (-1 + Math.floor(Math.random() * 3)) : 0,
+      Math.floor(Math.random() * 5) == 0 ? 12 * (-1 + Math.floor(Math.random() * 3)) : 0,
+      Math.floor(Math.random() * 5) == 0 ? 12 * (-1 + Math.floor(Math.random() * 3)) : 0,
+      Math.floor(Math.random() * 5) == 0 ? 12 * (-1 + Math.floor(Math.random() * 3)) : 0,
+      Math.floor(Math.random() * 5) == 0 ? 12 * (-1 + Math.floor(Math.random() * 3)) : 0
+    ];
   }
 
   // first instrument, first patch
@@ -141,6 +150,9 @@ Script.prototype.key = function (press) {
   }
 
   if (press.x == 13) {
+    if (this.chordMode == press.y) {
+      return;
+    }
     this.set(press.x, this.chordMode, 0);
     this.setChordMode(press.y);
     this.set(press.x, this.chordMode, 1);
@@ -177,6 +189,9 @@ Script.prototype.key = function (press) {
   }
 
   if (press.x == 14) {
+    if (this.scale == press.y) {
+      return;
+    }
     this.unsetScale();
     this.scale = press.y;
     this.setScale(press.y);
@@ -185,8 +200,12 @@ Script.prototype.key = function (press) {
   }
 
   if (press.x == 15) {
+    var newScale = 8 + (press.y - 4);
+    if (this.scale == newScale) {
+      return;
+    }
     this.unsetScale();
-    this.setScale(8 + (press.y - 4));
+    this.setScale(newScale);
     this.set(press.x, press.y, 1);
     return;
   }
@@ -303,6 +322,9 @@ Script.prototype.setInstrument = function (instrument) {
 };
 
 Script.prototype.setInstrumentPatch = function (press) {
+  if (this.instrument == press.y && (this.patch[this.instrument] == press.x)) {
+    return;
+  }
   this.set(this.patch[this.instrument], this.instrument, 0);
   this.instrument = press.y;
   this.patch[this.instrument] = press.x;
@@ -349,38 +371,38 @@ Script.prototype.onNote = function (note, type, opts) {
 Script.prototype.getChordNotes = function (note) {
   var notes = [];
   if (this.chordMode == 1) {
-    notes.push(this.adhereToScale(note + 4));
-    notes.push(this.adhereToScale(note + 7));
+    notes.push(this.adhereToScale(note + 5) + this.voiceTable[note][0]);
+    notes.push(this.adhereToScale(note + 11) + this.voiceTable[note][1]);
   }
   if (this.chordMode == 2) {
-    notes.push(this.adhereToScale(note + 3));
-    notes.push(this.adhereToScale(note + 7));
+    notes.push(this.adhereToScale(note + 3) + this.voiceTable[note][0]);
+    notes.push(this.adhereToScale(note + 7) + this.voiceTable[note][1]);
   }
   if (this.chordMode == 3) {
-    notes.push(this.adhereToScale(note + 4));
-    notes.push(this.adhereToScale(note + 7));
-    notes.push(this.adhereToScale(note + 11));
+    notes.push(this.adhereToScale(note + 5) + this.voiceTable[note][0]);
+    notes.push(this.adhereToScale(note + 9) + this.voiceTable[note][1]);
+    notes.push(this.adhereToScale(note + 16) + this.voiceTable[note][2]);
   }
   if (this.chordMode == 4) {
-    notes.push(this.adhereToScale(note + 3));
-    notes.push(this.adhereToScale(note + 7));
-    notes.push(this.adhereToScale(note + 10));
+    notes.push(this.adhereToScale(note + 3) + this.voiceTable[note][0]);
+    notes.push(this.adhereToScale(note + 7) + this.voiceTable[note][1]);
+    notes.push(this.adhereToScale(note + 10) + this.voiceTable[note][2]);
   }
   if (this.chordMode == 5) {
-    notes.push(this.adhereToScale(note + 4));
-    notes.push(this.adhereToScale(note + 7));
-    notes.push(this.adhereToScale(note + 11));
-    notes.push(this.adhereToScale(note + 14));
+    notes.push(this.adhereToScale(note + 5) + this.voiceTable[note][0]);
+    notes.push(this.adhereToScale(note + 9) + this.voiceTable[note][1]);
+    notes.push(this.adhereToScale(note + 14) + this.voiceTable[note][2]);
+    notes.push(this.adhereToScale(note + 21) + this.voiceTable[note][3]);
   }
   if (this.chordMode == 6) {
-    notes.push(this.adhereToScale(note + 3));
-    notes.push(this.adhereToScale(note + 7));
-    notes.push(this.adhereToScale(note + 10));
-    notes.push(this.adhereToScale(note + 14));
+    notes.push(this.adhereToScale(note + 3) + this.voiceTable[note][0]);
+    notes.push(this.adhereToScale(note + 7) + this.voiceTable[note][1]);
+    notes.push(this.adhereToScale(note + 10) + this.voiceTable[note][2]);
+    notes.push(this.adhereToScale(note + 14) + this.voiceTable[note][3]);
   }
   if (this.chordMode == 7) {
     for (var i = 0; i < this.chordTable[note]; i++) {
-      var random = this.adhereToScale(note + ((i * 3) + this.chordTable[note + i]));
+      var random = this.adhereToScale(note + ((i * 4) + this.chordTable[note + i] + this.voiceTable[note][0]));
       if (notes.indexOf(random) == -1) {
         notes.push(random);
       }
@@ -391,12 +413,16 @@ Script.prototype.getChordNotes = function (note) {
 
 Script.prototype.applyChordMode = function (note, type, opts) {
   var notes = this.getChordNotes(note.note);
-  for (var i = 0; i < notes.length; i++) {
-    this.onNote({
-      note: notes[i],
-      velocity: note.velocity
-    }, type, _.extend(opts, {skipChordMode: true}));
-  }
+  _.each(notes, function (noteNum, i) {
+    var velocity = Math.max(0, Math.min(127, Math.floor((0.75 + (Math.random() / 2)) * note.velocity)));
+    var delay = Math.floor(Math.random() * 40);
+    setTimeout(function () {
+      this.onNote({
+        note: noteNum,
+        velocity: velocity
+      }, type, _.extend(opts, {skipChordMode: true}));
+    }.bind(this), delay);
+  }.bind(this));
 };
 
 Script.prototype.addToBuffers = function (press) {

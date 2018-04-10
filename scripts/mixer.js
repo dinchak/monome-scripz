@@ -33,7 +33,6 @@ Script.prototype.init = function () {
   }
   this.wander = [64, 64, 64, 64, 64];
   this.wanderDir = [-1, -1, 1, 1, -1];
-  this.initTurnadoWander();
 };
 
 Script.prototype.key = function (press) {
@@ -154,6 +153,7 @@ Script.prototype.onClock = function () {
     }    
   }
   this.unholdFingers();
+  this.turnadoWander();
 };
 
 Script.prototype.holdFinger = function (division) {
@@ -200,35 +200,36 @@ Script.prototype.onPosition = function (ev) {
   }
 };
 
-Script.prototype.initTurnadoWander = function () {
-  setInterval(function () {
-    for (var i = 0; i < 5; i++) {
-      if (Math.floor(Math.random() * 10) == 0) {
-        if (this.wanderDir[i] == -1) {
-          this.wanderDir[i] = 1;
-        } else {
-          this.wanderDir[i] = -1;
-        }
-      }
-      this.wander[i] += this.wanderDir[i];
-      if (this.wander[i] < 0) {
-        this.wander[i] = 0;
-      }
-      if (this.wander[i] > 127) {
-        this.wander[i] = 127;
-      }
-      if (this.wander[i] == 0) {
+Script.prototype.turnadoWander = function () {
+  for (var i = 0; i < 5; i++) {
+    if (this.faderCC[i + 5] == 0) {
+      continue;
+    }
+    if (Math.floor(Math.random() * 10) == 0) {
+      if (this.wanderDir[i] == -1) {
         this.wanderDir[i] = 1;
-      }
-      if (this.wander[i] == 127) {
+      } else {
         this.wanderDir[i] = -1;
       }
-      this.output.send({
-        type: 'cc',
-        controller: i,
-        channel: 13,
-        value: this.wander[i]
-      });
     }
-  }.bind(this), 20);
+    this.wander[i] += this.wanderDir[i];
+    if (this.wander[i] < 0) {
+      this.wander[i] = 0;
+    }
+    if (this.wander[i] > 127) {
+      this.wander[i] = 127;
+    }
+    if (this.wander[i] == 0) {
+      this.wanderDir[i] = 1;
+    }
+    if (this.wander[i] == 127) {
+      this.wanderDir[i] = -1;
+    }
+    this.output.send({
+      type: 'cc',
+      controller: i,
+      channel: 13,
+      value: this.wander[i]
+    });
+  }
 };

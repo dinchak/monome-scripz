@@ -99,6 +99,10 @@ Script.prototype.init = function () {
         patrec.reset();
       });
     }
+    self.tinyBufferPosition = -1;
+    self.shorterBufferPosition = -1;
+    self.shortBufferPosition = -1;
+    self.longBufferPosition = -1;
   });
 
   this.set(this.device.sizeX - 1, 0, 1);
