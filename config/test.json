@@ -1,10 +1,19 @@
 {
-  "m128-302": {
+  "m1000079": {
     "scripts": [
       {
-        "script": "triggers",
+        "script": "drumrack2",
         "config": {
-          "testconfig": "testconfigvalue"
+          "midiout": "drumrack2 out",
+          "midiin": "drumrack2 in"
+        }
+      },
+      {
+        "script": "midilooper2",
+        "config": {
+          "midiout": "midilooper2 out",
+          "midiin": "midilooper2 in",
+          "keyboard": "LPK25"
         }
       }
     ]
